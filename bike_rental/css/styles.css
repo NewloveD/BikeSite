@@ -1,25 +1,30 @@
-/* styles.css */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    color: #ffffff;
     margin: 0;
-    padding: 0;
 }
 
 header {
-    background: #35424a;
-    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 20px;
-    text-align: center;
+    background-color: navy; /* Set background to navy blue */
+    border: 2px solid #ffffff; /* Add a white border */
+}
+
+.logo {
+    width: 100px; /* Adjust logo size */
+    margin-right: auto; /* Ensures logo is aligned to the left */
 }
 
 nav ul {
     list-style: none;
-    padding: 0;
+    display: flex;
 }
 
 nav ul li {
-    display: inline;
     margin: 0 15px;
 }
 
@@ -28,39 +33,25 @@ nav a {
     text-decoration: none;
 }
 
-nav a:hover {
-    text-decoration: underline;
+.welcome-section {
+    text-align: center;
+    padding: 40px;
 }
 
-h1, h2 {
-    color: #35424a;
-}
-
-form {
-    background: #ffffff;
-    padding: 20px;
-    margin: 20px auto;
-    width: 300px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-form input[type="text"],
-form input[type="password"],
-form input[type="submit"] {
+.bike-image {
     width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    max-width: 600px; /* Adjust as necessary */
+    display: block;
+    margin: 0 auto;
 }
 
-form input[type="submit"] {
-    background: #35424a;
+footer {
+    text-align: center;
+    padding: 20px;
+}
+
+.social-media a {
+    margin: 0 10px;
     color: #ffffff;
-    cursor: pointer;
-}
-
-form input[type="submit"]:hover {
-    background: #2c3e50;
+    text-decoration: none;
 }

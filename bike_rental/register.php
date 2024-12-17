@@ -34,7 +34,7 @@ $pdo = null;
 ?>
 
 <!-- HTML Form -->
-<link rel="stylesheet" href="css/styles.css"> // link to css
+<link rel="stylesheet" href="css/styles.css"> 
 <form method="POST">
     <input type="text" name="username" placeholder="Username" required>
     <input type="password" name="password" placeholder="Password" required>
