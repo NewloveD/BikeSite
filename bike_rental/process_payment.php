@@ -2,84 +2,79 @@
 session_start();
 require 'includes/db.php';
 
-
-// Check if the user is logged in
+// Redirect to login page if the user is not logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
-// Initialize variables to store bike details
+// Fetch rental information for the logged-in user
 $bike_id = null;
 $rented_time = null;
 
-// Check if we have a rental record for the user
-$stmt = $pdo->prepare("SELECT bike_id, rental_time FROM rentals WHERE user_id = ? AND is_returned = 0");
-$stmt->execute([$_SESSION['user_id']]);
-$rental = $stmt->fetch(PDO::FETCH_ASSOC);
+try {
+    $stmt = $pdo->prepare("SELECT bike_id, rental_time FROM rentals WHERE user_id = ? AND is_returned = 0");
+    $stmt->execute([$_SESSION['user_id']]);
+    $rental = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($rental) {
-    $bike_id = $rental['bike_id'];
-    $rented_time = $rental['rental_time'];
+    if ($rental) {
+        $bike_id = $rental['bike_id'];
+        $rented_time = $rental['rental_time'];
+    }
+} catch (PDOException $e) {
+    die("Error fetching rental details: " . $e->getMessage());
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Handle the return bike request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $bike_id) {
     $user_id = $_SESSION['user_id'];
     $return_station = $_POST['return_station'];
+    $return_time = date('Y-m-d H:i:s'); // Get the current return time
 
-    // Start a transaction
+    // Begin a database transaction
     $pdo->beginTransaction();
-    
-    try {
-        // Update the rental record to mark the bike as returned
-        $stmt = $pdo->prepare("UPDATE rentals SET is_returned = 1, return_station = ? WHERE user_id = ? AND bike_id = ?");
-        $stmt->execute([$return_station, $user_id, $bike_id]);
 
-        // Update the bikes table to set is_rented to 0
-        $stmt = $pdo->prepare("UPDATE bikes SET is_rented = 0 WHERE id = ?");
-        $stmt->execute([$bike_id]);
+    try {
+        // Update the `bikes` table to mark the bike as not rented and store the return station
+        $stmt = $pdo->prepare(
+            "UPDATE bikes 
+             SET is_rented = 0, return_station = ? 
+             WHERE id = ? 
+             AND EXISTS (
+                 SELECT 1 
+                 FROM rentals 
+                 WHERE user_id = ? 
+                 AND bike_id = bikes.id 
+                 AND is_returned = 0
+             )"
+        );
+        $stmt->execute([$return_station, $bike_id, $user_id]);
+
+        // Update the `rentals` table to mark the bike as returned and record the return time
+        $stmt = $pdo->prepare(
+            "UPDATE rentals 
+             SET is_returned = 1, return_time = ? 
+             WHERE user_id = ? 
+             AND bike_id = ?"
+        );
+        $stmt->execute([$return_time, $user_id, $bike_id]);
 
         // Commit the transaction
         $pdo->commit();
 
-        echo "Bike returned successfully!";
-        header("Location: index.php");
+        // Set success message and redirect to payment page
+        $_SESSION['return_message'] = "Bike returned successfully!";
+        header("Location: payment.php");
         exit;
 
     } catch (Exception $e) {
-        // Rollback the transaction in case of error
+        // Rollback the transaction on failure
         $pdo->rollBack();
-        echo "Error returning the bike. Please try again.";
+
+        // Set error message and redirect to payment page
+        $_SESSION['return_message'] = "Error returning the bike. Please try again.";
+        header("Location: payment.php");
+        exit;
     }
 }
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="css/styles.css">
-    <title>Return Bike</title>
-</head>
-<body>
-    <h2>Return Bike</h2>
-
-    <?php if ($bike_id): ?>
-        <form method="POST">
-            <label for="return_station">Select Return Station:</label>
-            <select name="return_station" required>
-                <option value="Green Lane">Green Lane</option>
-                <option value="Harwood Arena">Harwood Arena</option>
-                <option value="CAS Building">CAS Building</option>
-                <option value="North Ave Parking Lot">North Ave Parking Lot</option>
-                <option value="Enlow Recital Hall">Enlow Recital Hall</option>
-                <option value="STEM Parking Lot">STEM Parking Lot</option>
-                <option value="Hutchinson Hall">Hutchinson Hall</option>
-            </select>
-            <input type="submit" value="Submit">
-        </form>
-    <?php else: ?>
-        <p>No bike currently rented. Please rent a bike first.</p>
-    <?php endif; ?>
-
-</body>
-</html>

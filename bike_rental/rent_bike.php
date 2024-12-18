@@ -1,8 +1,8 @@
 <?php
 require 'includes/db.php';
 require 'header.php';
-session_start(); // Start the session before accessing any session variables
 
+// Check if the user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
@@ -15,12 +15,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Insert rental with current time
     $stmt = $pdo->prepare("INSERT INTO rentals (user_id, bike_id, rental_time, is_returned) VALUES (?, ?, ?, 0)");
     if ($stmt->execute([$_SESSION['user_id'], $bike_id, $current_time])) {
+        // Update the bike's status to rented
+        $update_stmt = $pdo->prepare("UPDATE bikes SET is_rented = 1 WHERE id = ?");
+        $update_stmt->execute([$bike_id]);
+        
         echo "Bike rented successfully!";
     } else {
         echo "Error renting bike.";
     }
 }
 
+// Fetch available bikes
 $bikes = $pdo->query("SELECT * FROM bikes WHERE is_rented = 0")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <link rel="stylesheet" href="css/styles.css"> 
